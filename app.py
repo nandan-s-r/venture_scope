@@ -1,27 +1,37 @@
 import streamlit as st
+st.set_page_config(page_title="VentureScope", layout="wide")
+
 import os
+import requests
 from groq import Groq
 
 # ------------------ UI THEME ------------------
 st.markdown("""
 <style>
 body {
-    background-color: #0e1117;
-    color: #ffffff;
+    background-color: #0b0f14;
 }
 .block-container {
     padding: 2rem;
 }
 .section {
-    background-color: #161b22;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 15px;
+    background: linear-gradient(145deg, #111827, #0f172a);
+    padding: 20px;
+    border-radius: 14px;
+    margin-bottom: 18px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.title {
+    font-size: 42px;
+    font-weight: 700;
+}
+.subtitle {
+    color: #9ca3af;
 }
 .score {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: bold;
-    color: #00ff9f;
+    color: #22c55e;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -30,13 +40,14 @@ body {
 api_key = os.getenv("GROQ_API_KEY")
 
 if not api_key:
-    st.error("API key not found. Set GROQ_API_KEY in terminal.")
+    st.error("API key not found. Set GROQ_API_KEY in Secrets.")
     st.stop()
 
 client = Groq(api_key=api_key)
 
 # ------------------ UI ------------------
-st.title("🚀 VentureScope")
+st.markdown("<div class='title'>🚀 VentureScope</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>AI VC Decision Engine</div>", unsafe_allow_html=True)
 st.caption("AI-powered startup analysis for investors")
 
 startup = st.text_input("Enter Startup Name:")
@@ -53,27 +64,34 @@ def display_section(title, content):
 # ------------------ MAIN LOGIC ------------------
 if startup:
 
+    # ---- LOG SEARCH (Google Sheets) ----
+    try:
+        requests.post(
+            "https://script.google.com/macros/s/AKfycbyWpP3JJwQgk62qbeQzXMBYsk8srKDemoYss7wlGuHIVae4xPSMZcWKcfhfiyQoa0UodQ/exec",
+            json={"startup": startup},
+            timeout=5
+        )
+    except:
+        pass
+
+    # ---- PROMPT ----
     prompt = f"""
-You are a venture capital analyst.
+Act as a venture capital analyst.
 
 Startup: {startup}
 
-Provide a realistic VC-style analysis using general knowledge.
+Output strictly:
 
-Return EXACT format:
-
-Overview:
-(max 2 lines)
+Overview: (max 2 lines)
 
 Business Model:
-- (max 3 bullets, include revenue source)
+- (3 bullets max, include revenue source)
 
-Market:
-(max 2 lines)
+Market: (max 2 lines)
 
 Investment:
 Score: X/10
-Verdict: (1 short sentence)
+Verdict: (1 sharp line)
 
 Strengths:
 - (2 bullets)
@@ -82,19 +100,20 @@ Risks:
 - (2 bullets)
 
 Rules:
-- Be practical and realistic
-- Do NOT say "unknown" unless absolutely necessary
-- Do NOT give exact numbers unless confident
-- Keep total under 120 words
+- No fluff
+- No generic words like "strong potential"
+- No made-up numbers
+- Max 100 words
 """
 
     try:
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-8b-instant",
-            temperature=0.3,
-            max_tokens=180
-        )
+        with st.spinner("Analyzing startup..."):
+            response = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.1-8b-instant",
+                temperature=0.3,
+                max_tokens=180
+            )
 
         output = response.choices[0].message.content
 
