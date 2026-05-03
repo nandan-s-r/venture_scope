@@ -67,7 +67,7 @@ if startup:
     # ---- LOG SEARCH (Google Sheets) ----
     try:
         requests.post(
-    "https://script.google.com/macros/s/AKfycbzIVR5TV4DxHKXEuy_Q2vp6BPInJ9gZCciSQD70Cw8ofBCfzXi338VaYxiMl9fHZkjKyA/exec",
+    "https://script.google.com/macros/s/AKfycbw4Qzyie6-76L8pEOt5RB4_tFeiUA66Pl9KmKr6VbBoEmela7RF86rQZrQh89--TIJQkg/exec",
     json={"startup": startup}
 )
     except:
