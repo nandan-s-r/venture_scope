@@ -4,20 +4,18 @@ import json
 import re
 import html
 from groq import Groq
+import matplotlib.pyplot as plt
 
-# ------------------ PAGE CONFIG ------------------
+# ------------------ CONFIG ------------------
 st.set_page_config(page_title="VentureScope", layout="wide")
 
 # ------------------ STYLE ------------------
 st.markdown("""
 <style>
-
-/* BACKGROUND */
 .main {
     background: radial-gradient(circle at top, #0a0f1a 0%, #050816 100%);
 }
 
-/* HERO */
 .hero {
     padding: 24px;
     border-radius: 20px;
@@ -26,7 +24,6 @@ st.markdown("""
     margin-bottom: 20px;
 }
 
-/* TITLE */
 .title {
     font-size: 38px;
     font-weight: 800;
@@ -36,29 +33,7 @@ st.markdown("""
     color: #94a3b8;
 }
 
-/* METRICS */
-.metric-card {
-    background: #020617;
-    border: 1px solid rgba(34,197,94,0.2);
-    border-radius: 16px;
-    padding: 14px;
-    transition: 0.2s;
-}
-.metric-card:hover {
-    border: 1px solid #22c55e;
-    box-shadow: 0 0 12px rgba(34,197,94,0.3);
-}
-.metric-label {
-    font-size: 12px;
-    color: #94a3b8;
-}
-.metric-value {
-    font-size: 28px;
-    font-weight: 800;
-    color: white;
-}
-
-/* CARDS */
+/* cards */
 .card {
     background: #020617;
     border: 1px solid rgba(255,255,255,0.05);
@@ -69,16 +44,27 @@ st.markdown("""
 .card-title {
     font-weight: 700;
     color: #22c55e;
-    margin-bottom: 6px;
 }
 .card-body {
     color: #d1d5db;
-    font-size: 14px;
 }
 
-/* TABS */
-.stTabs [aria-selected="true"] {
-    color: #22c55e !important;
+/* metric */
+.metric {
+    background: #020617;
+    border: 1px solid rgba(34,197,94,0.2);
+    padding: 14px;
+    border-radius: 14px;
+    text-align: center;
+}
+.metric-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: white;
+}
+.metric-label {
+    font-size: 12px;
+    color: #94a3b8;
 }
 
 </style>
@@ -97,7 +83,6 @@ def esc(x):
     return html.escape(str(x)) if x else "unknown"
 
 def extract_json(text):
-    text = text.strip()
     text = re.sub(r"```json|```", "", text)
     match = re.search(r"\{.*\}", text, re.S)
     return json.loads(match.group())
@@ -105,8 +90,8 @@ def extract_json(text):
 def card(title, content):
     st.markdown(f"""
     <div class="card">
-        <div class="card-title">{esc(title)}</div>
-        <div class="card-body">{esc(content)}</div>
+    <div class="card-title">{title}</div>
+    <div class="card-body">{esc(content)}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -115,16 +100,8 @@ def list_card(title, items):
     li = "".join(f"<li>{esc(i)}</li>" for i in items)
     st.markdown(f"""
     <div class="card">
-        <div class="card-title">{esc(title)}</div>
-        <ul class="card-body">{li}</ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-def metric(label, value):
-    st.markdown(f"""
-    <div class="metric-card">
-        <div class="metric-label">{label}</div>
-        <div class="metric-value">{value}</div>
+    <div class="card-title">{title}</div>
+    <ul class="card-body">{li}</ul>
     </div>
     """, unsafe_allow_html=True)
 
@@ -132,8 +109,7 @@ def metric(label, value):
 st.markdown("""
 <div class="hero">
 <div class="title">🚀 VentureScope</div>
-<div class="subtitle">AI VC Decision Engine</div>
-<div class="subtitle">Clean investor-style startup analysis</div>
+<div class="subtitle">Startup Decision Engine</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -151,17 +127,24 @@ Return ONLY JSON.
 Startup: {startup}
 
 {{
-"one_liner": "",
-"overview": "",
-"market_summary": "",
-"market_stage": "",
-"why_now": "",
 "score": 0,
 "verdict": "",
-"confidence": "",
-"strengths": [],
+"confidence": 0.0,
+
+"market_score": 0,
+"business_score": 0,
+"moat_score": 0,
+"execution_score": 0,
+"risk_score": 0,
+
+"why": [],
 "risks": [],
-"diligence_questions": []
+"signals": {{
+"market": "",
+"moat": "",
+"execution": "",
+"risk": ""
+}}
 }}
 """
 
@@ -174,35 +157,47 @@ Startup: {startup}
 
     data = extract_json(res.choices[0].message.content)
 
-    # ------------------ METRICS ------------------
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        metric("Score", f"{data['score']}/10")
-    with c2:
-        metric("Verdict", data["verdict"])
-    with c3:
-        metric("Confidence", data["confidence"])
-    with c4:
-        metric("Startup", startup)
+    # ------------------ DECISION ------------------
+    st.subheader("🔥 Decision")
 
-    # ------------------ TABS ------------------
-    tabs = st.tabs(["Summary", "Business", "Risks", "Questions"])
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Score", f"{data['score']}/10")
+    c2.metric("Verdict", data["verdict"])
+    c3.metric("Confidence", f"{int(data['confidence']*100)}%")
 
-    with tabs[0]:
-        col1, col2 = st.columns(2)
-        with col1:
-            card("🚀 One-liner", data["one_liner"])
-            card("📘 Overview", data["overview"])
-        with col2:
-            card("📊 Market", data["market_summary"])
-            card("📍 Stage", data["market_stage"])
-            card("⚡ Why now", data["why_now"])
+    st.progress(data["confidence"])
 
-    with tabs[1]:
-        list_card("💰 Strengths", data["strengths"])
+    # ------------------ WHY ------------------
+    list_card("💡 Why", data["why"])
 
-    with tabs[2]:
-        list_card("⚠️ Risks", data["risks"])
+    # ------------------ RISKS ------------------
+    list_card("⚠️ Risks", data["risks"])
 
-    with tabs[3]:
-        list_card("❓ Diligence Questions", data["diligence_questions"])
+    # ------------------ SIGNALS ------------------
+    st.subheader("📊 Signals")
+    s1, s2, s3, s4 = st.columns(4)
+    s1.metric("Market", data["signals"]["market"])
+    s2.metric("Moat", data["signals"]["moat"])
+    s3.metric("Execution", data["signals"]["execution"])
+    s4.metric("Risk", data["signals"]["risk"])
+
+    # ------------------ SCORE CHART ------------------
+    st.subheader("📈 Score Breakdown")
+
+    scores = {
+        "Market": data["market_score"],
+        "Business": data["business_score"],
+        "Moat": data["moat_score"],
+        "Execution": data["execution_score"],
+        "Risk": 10 - data["risk_score"]
+    }
+
+    labels = list(scores.keys())
+    values = list(scores.values())
+
+    fig, ax = plt.subplots()
+    ax.bar(labels, values)
+    ax.set_ylim(0, 10)
+    ax.set_title("Score Breakdown")
+
+    st.pyplot(fig)
