@@ -2,9 +2,8 @@ import streamlit as st
 import os
 import json
 import re
-import html
 from groq import Groq
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # ------------------ CONFIG ------------------
 st.set_page_config(page_title="VentureScope", layout="wide")
@@ -17,15 +16,14 @@ st.markdown("""
 }
 
 .hero {
-    padding: 24px;
-    border-radius: 20px;
+    padding: 20px;
+    border-radius: 16px;
     background: linear-gradient(135deg, #0f172a, #020617);
-    border: 1px solid rgba(255,255,255,0.06);
-    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
 }
 
 .title {
-    font-size: 38px;
+    font-size: 36px;
     font-weight: 800;
     color: white;
 }
@@ -33,40 +31,21 @@ st.markdown("""
     color: #94a3b8;
 }
 
-/* cards */
 .card {
     background: #020617;
     border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 14px;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
 }
+
 .card-title {
-    font-weight: 700;
     color: #22c55e;
+    font-weight: 700;
 }
 .card-body {
     color: #d1d5db;
 }
-
-/* metric */
-.metric {
-    background: #020617;
-    border: 1px solid rgba(34,197,94,0.2);
-    padding: 14px;
-    border-radius: 14px;
-    text-align: center;
-}
-.metric-value {
-    font-size: 28px;
-    font-weight: 800;
-    color: white;
-}
-.metric-label {
-    font-size: 12px;
-    color: #94a3b8;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -79,9 +58,6 @@ if not api_key:
 client = Groq(api_key=api_key)
 
 # ------------------ HELPERS ------------------
-def esc(x):
-    return html.escape(str(x)) if x else "unknown"
-
 def extract_json(text):
     text = re.sub(r"```json|```", "", text)
     match = re.search(r"\{.*\}", text, re.S)
@@ -90,18 +66,18 @@ def extract_json(text):
 def card(title, content):
     st.markdown(f"""
     <div class="card">
-    <div class="card-title">{title}</div>
-    <div class="card-body">{esc(content)}</div>
+        <div class="card-title">{title}</div>
+        <div class="card-body">{content}</div>
     </div>
     """, unsafe_allow_html=True)
 
 def list_card(title, items):
     items = items or []
-    li = "".join(f"<li>{esc(i)}</li>" for i in items)
+    li = "".join(f"<li>{i}</li>" for i in items)
     st.markdown(f"""
     <div class="card">
-    <div class="card-title">{title}</div>
-    <ul class="card-body">{li}</ul>
+        <div class="card-title">{title}</div>
+        <ul class="card-body">{li}</ul>
     </div>
     """, unsafe_allow_html=True)
 
@@ -184,20 +160,24 @@ Startup: {startup}
     # ------------------ SCORE CHART ------------------
     st.subheader("📈 Score Breakdown")
 
-    scores = {
-        "Market": data["market_score"],
-        "Business": data["business_score"],
-        "Moat": data["moat_score"],
-        "Execution": data["execution_score"],
-        "Risk": 10 - data["risk_score"]
-    }
+    labels = ["Market", "Business", "Moat", "Execution", "Risk"]
+    values = [
+        data["market_score"],
+        data["business_score"],
+        data["moat_score"],
+        data["execution_score"],
+        10 - data["risk_score"]
+    ]
 
-    labels = list(scores.keys())
-    values = list(scores.values())
+    fig = go.Figure(data=[
+        go.Bar(x=labels, y=values)
+    ])
 
-    fig, ax = plt.subplots()
-    ax.bar(labels, values)
-    ax.set_ylim(0, 10)
-    ax.set_title("Score Breakdown")
+    fig.update_layout(
+        paper_bgcolor="#050816",
+        plot_bgcolor="#050816",
+        font_color="white",
+        yaxis=dict(range=[0, 10])
+    )
 
-    st.pyplot(fig)
+    st.plotly_chart(fig, use_container_width=True)
