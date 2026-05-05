@@ -15,7 +15,6 @@ st.markdown("""
     background: radial-gradient(circle at top, #0a0f1a 0%, #050816 100%);
 }
 
-/* HERO HEADER */
 .hero {
     padding: 20px;
     border-radius: 16px;
@@ -23,29 +22,32 @@ st.markdown("""
     border: 1px solid rgba(255,255,255,0.06);
     margin-bottom: 16px;
 }
+
 .title {
     font-size: 34px;
     font-weight: 800;
     color: white;
 }
+
 .subtitle {
     color: #94a3b8;
 }
 
 /* BIG OVERVIEW */
 .overview-hero {
-    background: linear-gradient(135deg, #020617, #020617);
     border: 1px solid rgba(34,197,94,0.2);
     border-radius: 18px;
-    padding: 22px;
-    margin-bottom: 18px;
+    padding: 24px;
+    margin-bottom: 20px;
 }
+
 .overview-title {
     font-size: 18px;
     font-weight: 700;
     color: #22c55e;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
+
 .overview-text {
     font-size: 18px;
     line-height: 1.7;
@@ -60,15 +62,17 @@ st.markdown("""
     padding: 14px;
     margin-bottom: 12px;
 }
+
 .card-title {
     color: #22c55e;
     font-weight: 700;
 }
+
 .card-body {
     color: #d1d5db;
 }
 
-/* SECTION TITLE */
+/* SECTION */
 .section-title {
     color: white;
     font-weight: 700;
@@ -146,7 +150,6 @@ Startup: {startup}
 {{
 "overview": "",
 "market_summary": "",
-"market_stage": "",
 "why_now": "",
 
 "market_score": 0,
@@ -155,19 +158,10 @@ Startup: {startup}
 "execution_score": 0,
 "risk_score": 0,
 
-"score": 0,
-"verdict": "",
 "confidence": 0.0,
 
 "why": [],
-"risks": [],
-
-"signals": {{
-"market": "",
-"moat": "",
-"execution": "",
-"risk": ""
-}}
+"risks": []
 }}
 """
 
@@ -180,7 +174,7 @@ Startup: {startup}
 
     data = extract_json(res.choices[0].message.content)
 
-    # ---- FIX SCORE ----
+    # ---- Compute Score ----
     m = safe_num(data.get("market_score"))
     b = safe_num(data.get("business_score"))
     mo = safe_num(data.get("moat_score"))
@@ -191,7 +185,7 @@ Startup: {startup}
     verdict = verdict_from_score(score)
     confidence = safe_num(data.get("confidence"), 0.7)
 
-    # ------------------ BIG OVERVIEW ------------------
+    # ------------------ OVERVIEW ------------------
     st.markdown(f"""
     <div class="overview-hero">
         <div class="overview-title">Overview</div>
@@ -211,15 +205,12 @@ Startup: {startup}
 
     st.progress(confidence)
 
-    # ------------------ SIGNALS ------------------
-    st.markdown('<div class="section-title">Signals</div>', unsafe_allow_html=True)
-
-    s = data.get("signals", {})
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Market", s.get("market", "N/A"))
-    c2.metric("Moat", s.get("moat", "N/A"))
-    c3.metric("Execution", s.get("execution", "N/A"))
-    c4.metric("Risk", s.get("risk", "N/A"))
+    # ------------------ WHY / RISKS ------------------
+    c1, c2 = st.columns(2)
+    with c1:
+        list_card("Why", data.get("why"))
+    with c2:
+        list_card("Risks", data.get("risks"))
 
     # ------------------ SCORE BREAKDOWN ------------------
     st.markdown('<div class="section-title">Score Breakdown</div>', unsafe_allow_html=True)
@@ -236,21 +227,14 @@ Startup: {startup}
         st.write(f"{k}: {v}/10")
         st.progress(v/10)
 
-    # ------------------ WHY / RISKS ------------------
-    c1, c2 = st.columns(2)
-    with c1:
-        list_card("Why", data.get("why"))
-    with c2:
-        list_card("Risks", data.get("risks"))
-
-    # ------------------ EXTRA CONTEXT ------------------
+    # ------------------ CONTEXT ------------------
     st.markdown('<div class="section-title">Context</div>', unsafe_allow_html=True)
 
-    c1, c2 = st.columns(2)
-    with c1:
+    col1, col2 = st.columns(2)
+    with col1:
         st.write("Market Summary")
         st.write(data.get("market_summary", "N/A"))
 
-    with c2:
+    with col2:
         st.write("Why Now")
         st.write(data.get("why_now", "N/A"))
