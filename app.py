@@ -12,71 +12,91 @@ st.set_page_config(page_title="VentureScope", layout="wide")
 st.markdown("""
 <style>
 .main {
-    background: radial-gradient(circle at top, #0a0f1a 0%, #050816 100%);
+    background:
+        radial-gradient(circle at top left, rgba(14,165,233,0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(16,185,129,0.10), transparent 25%),
+        linear-gradient(180deg, #050816 0%, #020617 100%);
 }
 
+/* HEADER */
 .hero {
-    padding: 20px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #0f172a, #020617);
-    border: 1px solid rgba(255,255,255,0.06);
+    padding: 22px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #020617, #0f172a);
+    border: 1px solid rgba(56,189,248,0.15);
     margin-bottom: 16px;
 }
-
 .title {
     font-size: 34px;
     font-weight: 800;
-    color: white;
+    color: #f8fafc;
 }
-
 .subtitle {
     color: #94a3b8;
 }
 
-/* BIG OVERVIEW */
+/* OVERVIEW */
 .overview-hero {
-    border: 1px solid rgba(34,197,94,0.2);
     border-radius: 18px;
     padding: 24px;
     margin-bottom: 20px;
+    background: linear-gradient(135deg, #020617, #020617);
+    border: 1px solid rgba(16,185,129,0.25);
 }
-
 .overview-title {
     font-size: 18px;
     font-weight: 700;
-    color: #22c55e;
+    color: #34d399;
     margin-bottom: 10px;
 }
-
 .overview-text {
     font-size: 18px;
     line-height: 1.7;
-    color: #e2e8f0;
+    color: #e5e7eb;
 }
 
 /* CARDS */
 .card {
-    background: #020617;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
+    background: linear-gradient(180deg, #020617, #020617);
+    border: 1px solid rgba(148,163,184,0.12);
+    border-radius: 16px;
     padding: 14px;
     margin-bottom: 12px;
 }
-
 .card-title {
-    color: #22c55e;
+    color: #34d399;
     font-weight: 700;
 }
-
 .card-body {
     color: #d1d5db;
 }
 
 /* SECTION */
 .section-title {
-    color: white;
+    color: #f8fafc;
     font-weight: 700;
     margin: 14px 0 8px 0;
+}
+
+/* BUTTON */
+.stButton > button {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    color: white;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+/* METRICS */
+div[data-testid="stMetric"] {
+    background: #020617;
+    border: 1px solid rgba(56,189,248,0.12);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+/* PROGRESS */
+div[data-testid="stProgress"] > div > div > div {
+    background: linear-gradient(90deg, #10b981, #06b6d4);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -105,9 +125,7 @@ def safe_num(x, default=0):
         return default
 
 def compute_score(m, b, mo, e, r):
-    return round(
-        m*0.25 + b*0.2 + mo*0.2 + e*0.2 + (10-r)*0.15, 1
-    )
+    return round(m*0.25 + b*0.2 + mo*0.2 + e*0.2 + (10-r)*0.15, 1)
 
 def verdict_from_score(score):
     if score >= 8:
@@ -174,7 +192,7 @@ Startup: {startup}
 
     data = extract_json(res.choices[0].message.content)
 
-    # ---- Compute Score ----
+    # ---- Score Logic ----
     m = safe_num(data.get("market_score"))
     b = safe_num(data.get("business_score"))
     mo = safe_num(data.get("moat_score"))
